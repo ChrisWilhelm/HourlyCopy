@@ -1,0 +1,17 @@
+# backend/Dockerfile
+
+# Install node image in container
+FROM node
+
+# Create and set the working directory
+RUN mkdir -p /app/backend
+WORKDIR /app/backend
+
+# Copy the dependency files over
+COPY package*.json /app/backend/
+
+# Install dependencies
+RUN npm install
+
+# Command to run them
+CMD ["npm", "run", "dev"]

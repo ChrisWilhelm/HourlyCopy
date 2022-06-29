@@ -1,0 +1,3493 @@
+openapi: 3.0.3
+info:
+  title: Hourly API
+  description:
+    This is an API for the Hourly Office Hours Application. Many operations
+    require an authentication token to be called.
+  version: 1.4.0
+servers:
+  - url: https://team-04-vasscc-hourly.herokuapp.com/api
+tags:
+  - name: Courses
+    description: Course information stored on the site
+  - name: Office Hours
+    description: Office Hours for the courses stored
+  - name: Registrations
+    description: Registrations for a specific office hours session
+  - name: Office Hour Questions
+    description: Questions for a specific office hours session
+  - name: Office Hour Feedback
+    description: Feedback for an office hours seesion
+  - name: Users
+    description: Basic User Data
+  - name: Topic Tag
+    description: Topics for Registrations
+  - name: Notifications
+    description: Notifications for a specific user
+  - name: Office Hour Queue
+    description: Queue for Office Hour
+paths:
+  ## course routes
+  /courses:
+    post:
+      tags:
+        - Courses
+      summary: Create a new course for the site
+      requestBody:
+        description: JSON object for the course to be added
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+        required: true
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course:
+                    $ref: "#/components/schemas/Course"
+        400:
+          description: Invalid Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        409:
+          description: Course Already Exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/{id}:
+    get:
+      tags:
+        - Courses
+      summary: gets course with a specific id
+      parameters:
+        - name: id
+          in: path
+          description: course id for look up
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course:
+                    $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        404:
+          description: There is no course
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course:
+                    $ref: "#/components/schemas/ApiError"
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Courses
+      summary: Registers for a specific course
+      parameters:
+        - name: id
+          in: path
+          description: course code, label as code in params
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Registered for biology"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        404:
+          description: There is no course
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "There is no course with the given code"
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Courses
+      summary: Deletes a specific course
+      parameters:
+        - name: id
+          in: path
+          description: course code
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Course successfully deleted"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not instructor for the course"
+        404:
+          description: There is no course
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "There is no course with the given code"
+      security:
+        - Bearer: []
+  /courses/{courseId}/roster:
+    post:
+      tags:
+        - Courses
+      summary: Adds a user to the roster
+      parameters:
+        - name: courseId
+          in: path
+          description: User Id to add to roster
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddToRoster"
+        required: true
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountId:
+                    type: number
+                  courseId:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+        404:
+          description: course not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no course with given ID"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/{courseId}/getRoster:
+    get:
+      tags:
+        - Courses
+      summary: Gets the roster for the course
+      parameters:
+        - name: courseId
+          in: path
+          description: CourseId to get roster for
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roster"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+        404:
+          description: course not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no course with given ID"
+      security:
+        - Bearer: []
+  /courses/{id}/roster/{userId}:
+    delete:
+      tags:
+        - Courses
+      summary: Removes a user from the course roster
+      parameters:
+        - name: id
+          in: path
+          description: Course Id to alter roster for
+          required: true
+          schema:
+            type: number
+        - name: userId
+          in: path
+          description: User id to remove from course
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "The student was removed from the roster"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: course not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: Inputed user is not in specified course"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/{id}/topicTags:
+    get:
+      tags:
+        - Courses
+      summary: gets all topic tags for a specific course
+      parameters:
+        - name: id
+          in: path
+          description: get topic tags for a course with this courseid
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topicTags:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TopicTag"
+                  numRegistrations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/numRegistrationsPerTopic"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: course not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no course with given ID"
+      security:
+        - Bearer: []
+  /courses/{courseId}/topicTags/{startDate}/{endDate}:
+    get:
+      tags:
+        - Courses
+      summary: TODO gets all topic tags with number of registrations for a specific course
+      parameters:
+        - name: courseId
+          in: path
+          description: get topic tags for a course with count of registrations
+          required: true
+          schema:
+            type: number
+        - name: startDate
+          in: path
+          description: start date to get tags for
+          required: true
+          schema:
+            type: string
+        - name: endDate
+          in: path
+          description: end date to get tags for
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicTagCount"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicTagCount"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/topicTags/create:
+    post:
+      tags:
+        - Courses
+      summary: creates a topic tag for a course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                courseId:
+                  description: id of the course
+                  type: number
+                topicName:
+                  type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topics:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TopicTag"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no course with given ID"
+        409:
+          description: Conflict with existing topics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: This topic already exists for this course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/topicTags/{topicId}:
+    delete:
+      tags:
+        - Courses
+      summary: deletes a topic tag for a course
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: topic id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topicTags:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not instructor for the course"
+      security:
+        - Bearer: []
+  /courses/{id}/role:
+    get:
+      tags:
+        - Courses
+      summary: gets role for an account for a course
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/registrations/count:
+    get:
+      tags:
+        - Courses
+      summary: gets the count of registrations for a course per student
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  counts:
+                    type: array
+                    items:
+                      properties:
+                        username:
+                          type: string
+                        email:
+                          type: string
+                        accountid:
+                          type: number
+                        count:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/registrations/count/byTime:
+    get:
+      tags:
+        - Courses
+      summary: gets the count of registrations for a course per hour time interval
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  counts:
+                    type: array
+                    items:
+                      properties:
+                        starttime:
+                          type: string
+                        endtime:
+                          type: string
+                        count:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/registrations/count/byOfficeHour/perDayOfWeek:
+    get:
+      tags:
+        - Courses
+      summary: get the number of registrations per office hour per day of week
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  counts:
+                    type: array
+                    items:
+                      properties:
+                        hostnames:
+                          type: array
+                          items:
+                            type: string
+                        hostemails:
+                          type: array
+                          items:
+                            type: string
+                        hostaccountids:
+                          type: array
+                          items:
+                            type: number
+                        count:
+                          type: number
+                        dayofweek:
+                          type: string
+                        starttime:
+                          type: string
+                        endtime:
+                          type: string
+                        officehourid:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/registrations/count/staff:
+    get:
+      tags:
+        - Courses
+      summary: get the number of registrations per staff for a course
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  counts:
+                    type: array
+                    items:
+                      properties:
+                        username:
+                          type: string
+                        email:
+                          type: string
+                        accountid:
+                          type: number
+                        count:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+      security:
+        - Bearer: []
+  # routes for users
+  /users/signup:
+    post:
+      tags:
+        - Users
+      summary: creates a new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: user's name
+                email:
+                  type: string
+                  example: oose@jh.edu
+                password:
+                  type: string
+                  example: password1234
+                phoneNumber:
+                  type: string
+                  example: 410-867-5309
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+      x-codegen-request-body-name: body
+  /users/login:
+    post:
+      tags:
+        - Users
+      summary: logs in an existing user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: oose@jh.edu
+                password:
+                  type: string
+                  example: password1234
+          application/xml:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: oose@jh.edu
+                password:
+                  type: string
+                  example: password1234
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+      x-codegen-request-body-name: body
+  /users/updateMe:
+    patch:
+      tags:
+        - Users
+      summary: updates a user's phone number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: 410-867-5309
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserNoPassword"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /users/updateMyPassword:
+    patch:
+      tags:
+        - Users
+      summary: updates a user's password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                password:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: gets a users informations
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserNoPassword"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/UserNoPassword"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+    delete:
+      tags:
+        - Users
+      summary: deletes a users account
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Account successfully deleted"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Account does not exist"
+      security:
+        - Bearer: []
+  /users/me/courses:
+    get:
+      tags:
+        - Users
+      summary: gets a users courses
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  courses:
+                    type: object
+                    properties:
+                      asStudent:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Course"
+                      asStaff:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Course"
+            application/xml:
+              schema:
+                type: object
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  /users/me/registrations:
+    get:
+      tags:
+        - Users
+      summary: gets a users registrations for all of their courses
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrations:
+                    type: array
+                    items:
+                      properties:
+                        registrationid:
+                          type: number
+                        accountid:
+                          type: number
+                        iscancelled:
+                          type: boolean
+                        starttime:
+                          type: string
+                        endtime:
+                          type: string
+                        ohdate:
+                          type: string
+                        queuenumber:
+                          type: number
+                        question:
+                          type: string
+                        feedback:
+                          type: string
+                        officehourstarttime:
+                          type: string
+                        officehourendtime:
+                          type: string
+                        recurringevent:
+                          type: boolean
+                        startdate:
+                          type: string
+                        enddate:
+                          type: string
+                        ohlocation:
+                          type: string
+                        courseid:
+                          type: number
+                        maxseats:
+                          type: number
+                        hostinfo:
+                          type: array
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              email:
+                                type: string
+                              accountid:
+                                type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  /users/me/registrations/{courseId}:
+    get:
+      tags:
+        - Users
+      summary: gets a users registrations for a course
+      parameters:
+        - name: courseId
+          in: path
+          description: Course Id to get registrations for
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrations:
+                    type: array
+                    items:
+                      properties:
+                        registrationid:
+                          type: number
+                        accountid:
+                          type: number
+                        iscancelled:
+                          type: boolean
+                        starttime:
+                          type: string
+                        endtime:
+                          type: string
+                        ohdate:
+                          type: string
+                        queuenumber:
+                          type: number
+                        question:
+                          type: string
+                        feedback:
+                          type: string
+                        officehourstarttime:
+                          type: string
+                        officehourendtime:
+                          type: string
+                        recurringevent:
+                          type: boolean
+                        startdate:
+                          type: string
+                        enddate:
+                          type: string
+                        ohlocation:
+                          type: string
+                        courseid:
+                          type: number
+                        maxseats:
+                          type: number
+                        hostinfo:
+                          type: array
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              email:
+                                type: string
+                              accountid:
+                                type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  /users/me/hosting/{courseId}:
+    get:
+      tags:
+        - Users
+      summary: gets a users office hours they are hosting for a course
+      parameters:
+        - name: courseId
+          in: path
+          description: Course Id to get office hours being hosted for
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officeHours:
+                    type: array
+                    items:
+                      properties:
+                        officehourid:
+                          type: number
+                        starttime:
+                          type: string
+                        endtime:
+                          type: string
+                        recurringevent:
+                          type: boolean
+                        startdate:
+                          type: string
+                        enddate:
+                          type: string
+                        ohlocation:
+                          type: string
+                        courseid:
+                          type: number
+                        maxseats:
+                          type: number
+                        accountid:
+                          type: number
+                        daysofweek:
+                          type: array
+                          items:
+                            properties:
+                              dayofweek:
+                                type: string
+                        cancelleddays:
+                          type: array
+                          items:
+                            properties:
+                              cancelledday:
+                                type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+      security:
+        - Bearer: []
+  # routes for office hours
+  /courses/officeHours/create:
+    post:
+      tags:
+        - Office Hours
+      summary: Creates a new Office Hour
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeHourInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/OfficeHourInput"
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officehour:
+                    $ref: "#/components/schemas/OfficeHour"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: All hosts must have valid credentials for creating an office hour"
+        409:
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: One or more of the hosts have a conflicting office hour"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/officeHours/{id}/{date}/this:
+    delete:
+      tags:
+        - Office Hours
+      summary: Cancels office hours for a specific day
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+          description: office hour id
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+          description: office hour date
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officeHour:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+        409:
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: office hours is cancelled on given day"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/{id}/officeHours:
+    get:
+      tags:
+        - Office Hours
+      summary: gets office hours for a specific course id
+      parameters:
+        - name: id
+          in: path
+          description: Id of course to get office hours for
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officeHours:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OfficeHour"
+            application/xml:
+              schema:
+                type: object
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+      security:
+        - Bearer: []
+  # /courses/officeHours/{officehourid}/{date}/numStudents:
+  #   get:
+  #     tags:
+  #       - Office Hours
+  #     summary: gets a object representing the number of students registered for an office hour
+  #     parameters:
+  #       - name: officehourid
+  #         in: path
+  #         description: office hour Id to get registrations for
+  #         required: true
+  #         schema:
+  #           type: number
+  #       - name: date
+  #         in: path
+  #         description: date to get registrations for
+  #         required: true
+  #         schema:
+  #           type: string
+  #     responses:
+  #       200:
+  #         description: ok
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #           application/xml:
+  #             schema:
+  #               type: object
+  #       400:
+  #         description: Bad Request
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: "#/components/schemas/ApiError"
+  #       401:
+  #         description: Invalid Credentials
+  #         content: {}
+  #     security:
+  #       - Bearer: []
+  /courses/officeHours/{id}/topicTags/{date}:
+    get:
+      tags:
+        - Office Hours
+      summary: gets all topic tags with number of registrations for a specific office hour on specific date
+      parameters:
+        - name: id
+          in: path
+          description: office hour Id to get topic tagds for
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: date to get topic tags for
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicTagCount"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/times/{date}:
+    get:
+      tags:
+        - Office Hours
+      summary: gets available time intervals for an office hour on a given day
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: date of the office hours
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  times:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/timeIntervals"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/all:
+    delete:
+      tags:
+        - Office Hours
+      summary: Deletes all occurances of a specific office hour
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+          description: office hour id
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officeHour:
+                    type: object
+                    properties:
+                      officehourid:
+                        type: number
+                      starttime:
+                        type: string
+                      endtime:
+                        type: string
+                      recurringevent:
+                        type: boolean
+                      startdate:
+                        type: string
+                      enddate:
+                        type: string
+                      ohlocation:
+                        type: string
+                      courseid:
+                        type: number
+                      maxseats:
+                        type: number
+                      timeperstudent:
+                        type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: No office hour with the given id found"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/{date}/following:
+    delete:
+      tags:
+        - Office Hours
+      summary: Deletes all occurances of a specific office hour after the date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+          description: office hour id
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+          description: date to cancel after
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  officeHour:
+                    type: object
+                    properties:
+                      officehourid:
+                        type: number
+                      starttime:
+                        type: string
+                      endtime:
+                        type: string
+                      recurringevent:
+                        type: boolean
+                      startdate:
+                        type: string
+                      enddate:
+                        type: string
+                      ohlocation:
+                        type: string
+                      courseid:
+                        type: number
+                      maxseats:
+                        type: number
+                      timeperstudent:
+                        type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+      security:
+        - Bearer: []
+  # routes for Registrations
+  /courses/officeHours/{id}/register:
+    post:
+      tags:
+        - Registrations
+      summary: Registers for office hours for a specific date and time
+      parameters:
+        - name: id
+          in: path
+          description: Id of office hours to register for
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startTime:
+                  type: string
+                  example: 18:00
+                endTime:
+                  type: string
+                  example: 19:00
+                questions:
+                  type: array
+                  items:
+                    type: string
+                    example: ""
+                isCancelled:
+                  type: boolean
+                  example: false
+                date:
+                  type: string
+                  example: 2022-01-17
+                topicTagIds:
+                  type: array
+                  items:
+                    type: number
+          application/xml:
+            schema:
+              type: object
+              properties:
+                startTime:
+                  type: string
+                  example: 18:00
+                endTime:
+                  type: string
+                  example: 19:00
+                questions:
+                  type: array
+                  items:
+                    type: string
+                    example: ""
+                isCancelled:
+                  type: boolean
+                  example: false
+                date:
+                  type: string
+                  example: 2022-01-17
+                topicTagIds:
+                  type: array
+                  items:
+                    type: number
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: There is no office hour with given ID"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+  /courses/officeHours/{id}/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: gets registrations for a specific office hour
+      parameters:
+        - name: id
+          in: path
+          description: Id of office hours to get registrations for
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Registration"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Registration"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/officeHours/{id}/{date}/isRegistered:
+    get:
+      tags:
+        - Registrations
+      summary: determines if a student is registered for that specific officehours on the date
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: number
+          description: course id
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+          description: office hour id
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+          description: date
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isRegistered:
+                    type: boolean
+            application/xml:
+              schema:
+                type: object
+                properties:
+                  isRegistered:
+                    type: boolean
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  # routes for office hour questions
+  /courses/officeHours/{id}/{date}/questions:
+    get:
+      tags:
+        - Office Hour Questions
+      summary: gets questions for a specific office hour on specific date
+      parameters:
+        - name: id
+          in: path
+          description: Id of office hours to get questions for
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: Date to get questions for
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuestionWithUser"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuestionWithUser"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  # routes for office hour feedback
+  /courses/registrations/{registrationId}/feedback:
+    post:
+      tags:
+        - Office Hour Feedback
+      summary: adds feedback for a specific registration
+      parameters:
+        - name: registrationId
+          in: path
+          description: Id of specific registration
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feedback:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              properties:
+                feedback:
+                  type: string
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Feedback"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Feedback"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+      x-codegen-request-body-name: body
+    # patch:
+    #   tags:
+    #   - Office Hour Feedback
+    #   summary: updates feedback for a specific registration
+    #   parameters:
+    #   - name: registrationId
+    #     in: path
+    #     description: Id of specific registration
+    #     required: true
+    #     schema:
+    #       type: number
+    #   requestBody:
+    #     content:
+    #       application/json:
+    #         schema:
+    #           type: object
+    #           properties:
+    #             feedback:
+    #               type: string
+    #       application/xml:
+    #         schema:
+    #           type: object
+    #           properties:
+    #             feedback:
+    #               type: string
+    #     required: true
+    #   responses:
+    #     200:
+    #       description: ok
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: array
+    #             items:
+    #               $ref: '#/components/schemas/Feedback'
+    #         application/xml:
+    #           schema:
+    #             type: array
+    #             items:
+    #               $ref: '#/components/schemas/Feedback'
+    #     400:
+    #       description: Bad Request
+    #       content: {}
+    #     401:
+    #       description: Invalid Credentials
+    #       content: {}
+    #   security:
+    #   - Bearer: []
+    #   x-codegen-request-body-name: body
+    # delete:
+    #   tags:
+    #   - Office Hour Feedback
+    #   summary: deletes feedback for a specific registration
+    #   parameters:
+    #   - name: registrationId
+    #     in: path
+    #     description: Id of specific registration
+    #     required: true
+    #     schema:
+    #       type: number
+    #   responses:
+    #     200:
+    #       description: ok
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: array
+    #             items:
+    #               $ref: '#/components/schemas/Feedback'
+    #         application/xml:
+    #           schema:
+    #             type: array
+    #             items:
+    #               $ref: '#/components/schemas/Feedback'
+    #     400:
+    #       description: Bad Request
+    #       content: {}
+    #     401:
+    #       description: Invalid Credentials
+    #       content: {}
+    #   security:
+    #   - Bearer: []
+    #   x-codegen-request-body-name: body
+  /courses/{courseId}/officeHours/feedback:
+    get:
+      tags:
+        - Office Hour Feedback
+      summary: gets feedback for a specific host for that course
+      parameters:
+        - name: courseId
+          in: path
+          description: Id of course
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnonymousFeedback"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnonymousFeedback"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  # routes for topic tag
+  /courses/topictag/create:
+    post:
+      tags:
+        - Topic Tag
+      summary: creates a new topic tag for registrations for a course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topicName:
+                  type: string
+                courseId:
+                  type: number
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topic:
+                    type: array
+                    items:
+                      properties:
+                        topicid:
+                          type: number
+                        topicvalue:
+                          type: string
+                        courseid:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not staff for the course"
+        409:
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: This topic already exists for this course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/topictag/{topicTagId}:
+    delete:
+      tags:
+        - Topic Tag
+      summary: removes a specific topic tag from a course
+      parameters:
+        - name: courseId
+          in: path
+          description: get topic tags for a course with count of registrations
+          required: true
+          schema:
+            type: number
+        - name: topicTagId
+          in: path
+          description: topic tag to remove
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topicTags:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: account is not instructor for the course"
+      security:
+        - Bearer: []
+  /courses/{courseId}/topicTags:
+    get:
+      tags:
+        - Topic Tag
+      summary: gets all topic tags for a course
+      parameters:
+        - name: courseId
+          in: path
+          description: get topic tags for a course with count of registrations
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topicTags:
+                    type: array
+                    items:
+                      properties:
+                        topicid:
+                          type: number
+                        topicvalue:
+                          type: string
+                        courseid:
+                          type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  # routes for notifications
+  /users/me/notifs:
+    get:
+      tags:
+        - Notifications
+      summary: gets all notifications for a user
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Notifications
+      summary: adds notification for a specific user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/newNotification"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/newNotification"
+        required: true
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notification:
+                    $ref: "#/components/schemas/Notification"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  /users/me/notifs/clear/all:
+    delete:
+      tags:
+        - Notifications
+      summary: removes all notifications for a specific user
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: number
+                    description: number of notifications deleted
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  /users/me/notifs/{notifId}:
+    delete:
+      tags:
+        - Notifications
+      summary: removes specific notification for a specific user
+      parameters:
+        - name: notifId
+          in: path
+          description: specific notification id to remove
+          required: true
+          schema:
+            type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                    description: if the notification was deleted
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Token is not valid"
+      security:
+        - Bearer: []
+  # routes for office hour queue
+  /courses/officeHours/{id}/{date}/queue:
+    get:
+      tags:
+        - Office Hour Queue
+      summary: gets or starts the queue for the given office hours on the given day
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: date of the office hours
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getQueue"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/{date}/queue/student:
+    get:
+      tags:
+        - Office Hour Queue
+      summary: gets the student view of the queue if it is started
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: date of the office hours
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getQueueStudent"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/{date}/queueStarted:
+    get:
+      tags:
+        - Office Hour Queue
+      summary: gets if the queue has started for a specific office hours
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: date
+          in: path
+          description: date of the office hours
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isStarted:
+                    type: boolean
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/queue/waitlist:
+    post:
+      tags:
+        - Office Hour Queue
+      summary: adds current user to the waitlist
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  description: date of the office hours
+                  type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newStudent:
+                    type: object
+                    properties:
+                      accountid:
+                        type: number
+                      officehourid:
+                        type: number
+                      ohdate:
+                        type: string
+                      waitlistposition:
+                        type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/queue/{accountId}/noShow:
+    post:
+      tags:
+        - Office Hour Queue
+      summary: adds specific student to the no-show list
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: accountId
+          in: path
+          description: account To be moved
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  description: date of the office hours
+                  type: string
+                registrationId:
+                  description: id of the registration
+                  type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newNoShow:
+                    type: object
+                    properties:
+                      registrationid:
+                        type: number
+                      assignedstarttime:
+                        type: string
+                      assignedendtime:
+                        type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/queue/{accountId}:
+    delete:
+      tags:
+        - Office Hour Queue
+      summary: removes specific student from queue, MAKE SURE TO ADD A date property in the body as a string and a registrationId as a number!!
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+        - name: accountId
+          in: path
+          description: student to be removed from queue
+          required: true
+          schema:
+            type: string
+      # requestBody:
+      #   content:
+      #     application/json:
+      #       schema:
+      #         type: object
+      #         properties:
+      #           date:
+      #             description: date of the office hours
+      #             type: string
+      #           registrationId:
+      #             description: id of the registration
+      #             type: number
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Student removed from queue"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+  /courses/officeHours/{id}/queue/waitlist/toBack:
+    patch:
+      tags:
+        - Office Hour Queue
+      summary: moves student to back of waitlist
+      parameters:
+        - name: id
+          in: path
+          description: id of the office hours
+          required: true
+          schema:
+            type: number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  description: date of the office hours
+                  type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  position:
+                    type: number
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        401:
+          description: Invalid Credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "ERROR: User does not have access to specified course"
+      security:
+        - Bearer: []
+components:
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        accountid:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+    HostInfo:
+      type: object
+      properties:
+        hostinfo:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInfo"
+    DaysOfWeek:
+      type: object
+      properties:
+        daysofweek:
+          type: array
+          items:
+            type: string
+    CancelledDays:
+      type: object
+      properties:
+        cancelleddays:
+          type: array
+          items:
+            type: string
+    OfficeHour:
+      type: object
+      properties:
+        recurringevent:
+          type: boolean
+          default: true
+        ohlocation:
+          type: string
+          example: Zoom
+        startdate:
+          type: string
+          example: 2022-01-01
+        endDate:
+          type: string
+          example: 2022-05-01
+        starttime:
+          type: string
+          example: 13:00
+        endtime:
+          type: string
+          example: 15:00
+        courseid:
+          type: number
+        maxseats:
+          type: number
+        cancelleddays:
+          type: array
+          items:
+            type: string
+        hostinfo:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInfo"
+        daysofweek:
+          type: array
+          items:
+            type: string
+      xml:
+        name: OfficeHour
+    OfficeHourInput:
+      type: object
+      properties:
+        recurringEvent:
+          type: boolean
+          default: true
+        location:
+          type: string
+          example: Zoom
+        startDate:
+          type: string
+          example: "2022-01-17"
+        endDate:
+          type: string
+          example: "2022-12-17"
+        startTime:
+          type: string
+          example: 13:00
+        endTime:
+          type: string
+          example: 15:00
+        timeInterval:
+          type: number
+        hosts:
+          type: array
+          items:
+            type: number
+        daysOfWeek:
+          type: array
+          items:
+            type: string
+            example: ""
+        courseId:
+          type: number
+      xml:
+        name: OfficeHourInput
+    AddToRoster:
+      type: object
+      properties:
+        email:
+          type: string
+          example: oose@jh.edu
+        role:
+          type: string
+          enum:
+            - staff
+            - student
+    Course:
+      type: object
+      properties:
+        courseid:
+          type: integer
+          format: int64
+        title:
+          type: string
+          example: Object Oriented Software Engineering
+        coursenumber:
+          type: string
+          example: EN.601.421
+        semester:
+          type: string
+          example: Spring
+        calendaryear:
+          type: integer
+          example: 2022
+        code:
+          type: string
+          example: ABCDEF
+      xml:
+        name: Course
+    CourseInput:
+      required:
+        - number
+        - semester
+        - title
+        - year
+      type: object
+      properties:
+        title:
+          type: string
+          example: Object Oriented Software Engineering
+        number:
+          type: string
+          example: EN.601.421
+        semester:
+          type: string
+          example: Spring
+        year:
+          type: integer
+          example: 2022
+      xml:
+        name: CourseInput
+    User:
+      required:
+        - email
+        - name
+        - password
+      type: object
+      properties:
+        name:
+          type: string
+          example: Name of user
+        email:
+          type: string
+          example: oose@jh.edu
+        password:
+          type: string
+          example: password1234
+        phoneNumber:
+          type: string
+          example: 410-867-5309
+      xml:
+        name: User
+    UserNoPassword:
+      required:
+        - accountId
+        - email
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: Name of user
+        email:
+          type: string
+          example: oose@jh.edu
+        accountId:
+          type: number
+          example: 15.0
+        phoneNumber:
+          type: string
+          example: 410-867-5309
+      xml:
+        name: User
+    Feedback:
+      required:
+        - feedback
+        - registrationid
+      type: object
+      properties:
+        registrationid:
+          type: number
+        feedback:
+          type: string
+      xml:
+        name: Feedback
+    Questions:
+      required:
+        - questions
+        - registrationid
+      type: object
+      properties:
+        registrationid:
+          type: number
+        questions:
+          type: string
+      xml:
+        name: Questions
+    Registration:
+      type: object
+      properties:
+        registrationid:
+          type: number
+        accountid:
+          type: number
+        iscancelled:
+          type: boolean
+        starttime:
+          type: string
+          example: 12:00:00
+        endtime:
+          type: string
+          example: 13:00:00
+        ohdate:
+          type: string
+          example: YYYY-MM-DD
+        queuenumber:
+          type: number
+      xml:
+        name: Registration
+    QuestionWithUser:
+      required:
+        - email
+        - questions
+        - userName
+      type: object
+      properties:
+        questions:
+          type: string
+        userName:
+          type: string
+        email:
+          type: string
+      xml:
+        name: QuestionWithUser
+    AnonymousFeedback:
+      required:
+        - feedback
+      type: object
+      properties:
+        feedback:
+          type: string
+    TopicTagCount:
+      required:
+        - topicTag
+        - numRegistrations
+        - topicTagId
+      type: object
+      properties:
+        topicTag:
+          type: string
+        numRegistrations:
+          type: number
+        topicTagId:
+          type: number
+    TopicTag:
+      required:
+        - topicvalue
+        - topictagid
+        - courseid
+      type: object
+      properties:
+        topicvalue:
+          type: string
+        topictagid:
+          type: number
+        courseid:
+          type: number
+    numRegistrationsPerTopic:
+      required:
+        - numreigstrations
+        - topictag
+        - topicid
+      type: object
+      properties:
+        numregistrations:
+          type: number
+        topictag:
+          type: string
+        topicid:
+          type: number
+    Notification:
+      required:
+        - notificationcontent
+        - createdat
+        - notificationid
+      type: object
+      properties:
+        notificationcontent:
+          type: string
+        createdat:
+          type: string
+        notificationid:
+          type: number
+    newNotification:
+      required:
+        - text
+      type: object
+      properties:
+        text:
+          type: string
+    timeIntervals:
+      required:
+        - starttime
+        - endtime
+      type: object
+      properties:
+        starttime:
+          type: string
+          example: "HH:MM:SS"
+        endtime:
+          type: string
+          example: "HH:MM:SS"
+    getQueue:
+      required:
+        - queue
+        - waitlist
+        - noShow
+      type: object
+      properties:
+        queue:
+          type: array
+          items:
+            properties:
+              uname:
+                type: string
+                description: users name
+              accountid:
+                type: number
+              registrationid:
+                type: number
+              starttime:
+                type: string
+              endtime:
+                type: string
+              queueposition:
+                type: number
+        waitlist:
+          type: array
+          items:
+            properties:
+              uname:
+                type: string
+                description: users name
+              accountid:
+                type: number
+              officehourid:
+                type: number
+              ohdate:
+                type: string
+              waitlistposition:
+                type: number
+        noshow:
+          type: array
+          items:
+            properties:
+              uname:
+                type: string
+                description: users name
+              accountid:
+                type: number
+              registrationid:
+                type: number
+              starttime:
+                type: string
+              endtime:
+                type: string
+    getQueueStudent:
+      required:
+        - queue
+        - waitlist
+      type: object
+      properties:
+        queue:
+          type: array
+          items:
+            properties:
+              starttime:
+                type: string
+              endtime:
+                type: string
+              queueposition:
+                type: number
+              isUsersAccount:
+                type: boolean
+        waitlist:
+          type: array
+          items:
+            properties:
+              officehourid:
+                type: number
+              ohdate:
+                type: string
+              waitlistposition:
+                type: number
+              isUsersAccount:
+                type: boolean
+    Roster:
+      required:
+        - students
+        - staff
+        - instructors
+      type: object
+      properties:
+        students:
+          type: array
+          items:
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              accountid:
+                type: number
+        staff:
+          type: array
+          items:
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              accountid:
+                type: number
+        instructors:
+          type: array
+          items:
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              accountid:
+                type: number
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+    ApiError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "fail"
+        error:
+          type: object
+          properties:
+            statusCode:
+              type: number
+            status:
+              type: string
+            isOperational:
+              type: boolean
+            errors:
+              type: array
+              items:
+                properties:
+                  msg:
+                    type: string
+                  param:
+                    type: string
+                  location:
+                    type: string
+        message:
+          type: string
+        stack:
+          type: string
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header

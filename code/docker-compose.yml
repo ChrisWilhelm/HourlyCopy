@@ -1,0 +1,66 @@
+# docker-compose.yml
+version: '3'
+services:
+  # Backend container
+  server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    expose:
+      - 4000
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://hourly:hourly@postgres:5432/hourly
+      NODE_ENV: development
+      JWT_SECRET: secret
+      PORT: 4000
+      PGUSER: hourly
+      PGHOST: postgres
+      PGPASSWORD: hourly
+      PGDATABASE: hourly
+      PGPORT: 5432
+    ports:
+      - '4000:4000'
+    command: npm run dev
+    volumes:
+      - ./backend:/app/backend/
+      - ./backend/node_modules:/app/backend/node_modules
+    restart: unless-stopped
+
+  # Frontend container
+  client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      - REACT_APP_PORT=3000
+    expose:
+      - 3000
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/public:/app/frontend/public
+    links:
+      - server
+    command: npm run start
+    restart: unless-stopped
+
+  # Database container
+  postgres:
+    image: postgres:13.6-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: hourly
+      POSTGRES_PASSWORD: hourly
+      POSTGRES_DB: hourly
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+
+volumes:
+  pgdata:

@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "cd code/backend && npm install && npm run start",
+    "heroku-postbuild": "cd code/frontend && npm install && npm run build"
+  },
+  "engines": {
+    "node": "14.18.1"
+  },
+  "dependencies": {
+    "tunnel": "0.0.6"
+  }
+}

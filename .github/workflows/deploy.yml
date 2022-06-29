@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: AkhileshNS/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: 'team-04-vasscc-hourly'
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          buildpack: 'https://buildpack-registry.s3.amazonaws.com/buildpacks/heroku/nodejs.tgz'
+          appdir: 'code'
+        env:
+          NODE_ENV: development
+          HD_NODE_ENV: development
+          HD_ATLAS_URI: ${{ secrets.ATLAS_URI }}
+          HD_JWT_SECRET: ${{ secrets.JWT_SECRET }}
